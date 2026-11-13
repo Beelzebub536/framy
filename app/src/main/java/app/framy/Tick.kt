@@ -12,6 +12,7 @@ import app.framy.canvas.CanvasApi
 import app.framy.canvas.CanvasException
 import app.framy.canvas.CanvasLogic
 import app.framy.canvas.Fail
+import app.framy.mail.MailService
 
 /** The ~10-minute heartbeat: renews mail IDLE, polls Canvas, fires reminders. */
 object Tick {
@@ -26,6 +27,7 @@ object Tick {
 
     /** Blocking; call off the main thread. Never throws. */
     @Synchronized fun run(ctx: Context) {
+        try { MailService.renew(ctx) } catch (e: Exception) { Log.w("Framy", "mail renew: ${e.message}") }
         try { pollCanvas(ctx) } catch (e: Exception) { Log.w("Framy", "canvas tick: ${e.message}") }
     }
 
@@ -80,5 +82,6 @@ class TickReceiver : BroadcastReceiver() {
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
         Tick.arm(ctx.applicationContext)
+        MailService.start(ctx.applicationContext)
     }
 }
