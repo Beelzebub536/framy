@@ -1,0 +1,12 @@
+build/
+.gradle/
+local.properties
+.superpowers/
+canvas2telegram-main/
+*.jks
+*.keystore
+.idea/
+*.iml
+.kotlin/
+chat-worker/node_modules/
+tools/node_modules/
