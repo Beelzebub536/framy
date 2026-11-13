@@ -20,8 +20,22 @@ android {
         buildConfigField("String", "CHAT_URL", "\"${prop("framyChatUrl") ?: ""}\"")
     }
 
+    signingConfigs {
+        // Set framyStoreFile/framyStorePassword/framyKeyAlias/framyKeyPassword in ~/.gradle/gradle.properties
+        // (or ORG_GRADLE_PROJECT_* env vars in CI). Without them the release APK is built unsigned.
+        prop("framyStoreFile")?.let { path ->
+            create("release") {
+                storeFile = file(path)
+                storePassword = prop("framyStorePassword")
+                keyAlias = prop("framyKeyAlias")
+                keyPassword = prop("framyKeyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
