@@ -63,7 +63,7 @@ class MainActivity : ComponentActivity() {
             when {
                 top == "tab:canvas" -> CanvasScreen(canvas, onOpen = { push("canvas:${it.id}") }, onOpenPlanner = { push("planner:${it.key}") },
                     onOpenCourse = { push("course:${it.id}") }, onTab = ::tab, onChat = { push("chat") }, onSettings = { push("settings") })
-                top == "tab:mail" -> MailScreen(mail, onOpen = { push("mail:${it.uid}") }, onTab = ::tab, onChat = { push("chat") }, onSettings = { push("settings") })
+                top == "tab:mail" -> MailScreen(mail, canvas.items.count { !it.read }, onOpen = { push("mail:${it.uid}") }, onTab = ::tab, onChat = { push("chat") }, onSettings = { push("settings") })
                 top.startsWith("canvas:") -> canvas.items.firstOrNull { it.id == top.removePrefix("canvas:") }
                     ?.let { CanvasDetail(it, onBack = ::pop) } ?: pop()
                 top.startsWith("planner:") -> canvas.planner.firstOrNull { it.key == top.removePrefix("planner:") }

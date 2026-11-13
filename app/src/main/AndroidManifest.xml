@@ -30,6 +30,13 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Keeps one read-only IMAP IDLE connection so new email notifies instantly" />
         </service>
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="app.framy.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
+        </provider>
         <receiver android:name=".TickReceiver" android:exported="false" />
         <receiver android:name=".BootReceiver" android:exported="false">
             <intent-filter>
