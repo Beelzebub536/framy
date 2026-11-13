@@ -34,6 +34,12 @@ fun nextLink(header: String?): String? = header?.split(',')
     ?.firstOrNull { it.contains("rel=\"next\"") }
     ?.substringAfter('<')?.substringBefore('>')
 
+/** True only for https URLs on exactly the Canvas host: the token may be sent there and nowhere else. */
+fun sameHost(url: String, base: String): Boolean = try {
+    val u = URL(url); val b = URL(base)
+    u.protocol == "https" && u.userInfo == null && u.host.equals(b.host, ignoreCase = true) && u.port == b.port
+} catch (e: Exception) { false }
+
 /** Read-only Canvas client: every call is a GET to the user's own Canvas host. */
 object CanvasApi {
     private const val MAX_PAGES = 5
@@ -43,7 +49,8 @@ object CanvasApi {
 
     private class Resp(val body: String, val next: String?)
 
-    private fun get(url: String, token: String = token()): Resp {
+    private fun get(url: String, token: String = token(), base: String = base()): Resp {
+        if (!sameHost(url, base)) throw CanvasException(Fail.Other(0)) // never send the token anywhere else
         val u = URL(url)
         val c = (u.openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"; connectTimeout = 20_000; readTimeout = 20_000
@@ -84,7 +91,6 @@ object CanvasApi {
 
     /** Module File items carry an API url; resolve it to the (token-free, verifier-signed) download url. */
     fun fileDownloadUrl(fileApiUrl: String): Pair<String, String> {
-        require(fileApiUrl.startsWith(base())) { "refusing to send the token off the Canvas host" }
         val o = JSONObject(get(fileApiUrl).body)
         return o.getString("url") to (o.optString("display_name").ifEmpty { o.optString("filename", "file") })
     }
@@ -94,6 +100,7 @@ object CanvasApi {
 
     /** True if this base URL + token can read /users/self. */
     fun validate(baseUrl: String, token: String): Boolean = try {
-        get("${baseUrl.trim().trimEnd('/')}/api/v1/users/self", token); true
+        val b = baseUrl.trim().trimEnd('/')
+        get("$b/api/v1/users/self", token, b); true
     } catch (e: Exception) { false }
 }

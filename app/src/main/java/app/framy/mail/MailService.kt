@@ -36,7 +36,8 @@ class MailService : Service() {
 
         @Volatile private var folder: IMAPFolder? = null
         @Volatile private var imap: javax.mail.Store? = null
-        @Volatile private var running = false
+        /** The one live IMAP loop. A loop keeps going only while it is `current`, so a stop+start can never leave two. */
+        @Volatile private var current: Thread? = null
         @Volatile private var kick = false
         private val lock = Object()
 
@@ -58,14 +59,16 @@ class MailService : Service() {
         /** Called every tick: break IDLE so the connection is proven alive (or reconnect if it is dead). */
         fun renew(ctx: Context) {
             if (!configured()) return
-            if (!running) { start(ctx); return }
+            if (current?.isAlive != true) { start(ctx); return }
             val f = folder
             if (f != null && f.isOpen) {
                 val ex = Executors.newSingleThreadExecutor()
                 val probe = ex.submit { f.messageCount } // any command ends IDLE; the loop re-syncs and re-IDLEs
                 try { probe.get(30, TimeUnit.SECONDS) } catch (e: Exception) {
                     Log.w("Framy", "mail renew failed, reconnecting: ${e.message}")
-                    try { imap?.close() } catch (_: Exception) {}
+                    // Never close on the tick thread: closing a half-open IDLE can block forever.
+                    val s2 = imap
+                    Thread { try { f.forceClose() } catch (_: Exception) {}; try { s2?.close() } catch (_: Exception) {} }.start()
                 } finally { ex.shutdownNow() }
             }
             wake()
@@ -145,7 +148,6 @@ class MailService : Service() {
         }
     }
 
-    private var thread: Thread? = null
     private val netCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) = wake()
     }
@@ -156,16 +158,15 @@ class MailService : Service() {
         val n = Notify.runningNotification(this)
         if (Build.VERSION.SDK_INT >= 34) startForeground(Notify.RUNNING, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
         else startForeground(Notify.RUNNING, n)
-        if (thread?.isAlive != true) {
-            running = true
+        if (current?.isAlive != true) {
             getSystemService(ConnectivityManager::class.java).registerDefaultNetworkCallback(netCallback)
-            thread = Thread(::loop, "framy-imap").apply { start() }
+            current = Thread(::loop, "framy-imap").also { it.start() }
         }
         return START_STICKY
     }
 
     override fun onDestroy() {
-        running = false
+        current = null
         try { getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(netCallback) } catch (_: Exception) {}
         Thread { try { imap?.close() } catch (_: Exception) {} }.start()
         wake()
@@ -173,8 +174,10 @@ class MailService : Service() {
         super.onDestroy()
     }
 
+    private fun alive() = current === Thread.currentThread()
+
     private fun loop() {
-        while (running) {
+        while (alive()) {
             try {
                 val s = session(idle = true).getStore("imaps")
                 imap = s
@@ -183,14 +186,14 @@ class MailService : Service() {
                 f.open(Folder.READ_ONLY)
                 folder = f
                 Store.updateMail { it.copy(live = true, authRejected = false) }
-                while (running) {
+                while (alive()) {
                     sync(f)
                     f.idle(true) // returns on new mail / any server event, or when renew() sends a command
                 }
             } catch (e: AuthenticationFailedException) {
                 Store.updateMail { it.copy(live = false, authRejected = true) }
                 Notify.problem(this, Notify.PROBLEM_MAIL, "Gmail rejected the app password. Update it in Settings.")
-                running = false
+                if (alive()) current = null
                 stopSelf()
                 return
             } catch (e: Exception) {
@@ -201,7 +204,7 @@ class MailService : Service() {
                 if (Store.mail.value.live) Store.updateMail { it.copy(live = false) }
             }
             // Offline or dropped: wait for the next tick or the network to come back. No retry spin.
-            synchronized(lock) { while (running && !kick) lock.wait(); kick = false }
+            synchronized(lock) { while (alive() && !kick) lock.wait(); kick = false }
         }
     }
 

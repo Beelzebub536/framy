@@ -67,11 +67,11 @@ object Tick {
 
 class TickReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
+        Tick.arm(ctx.applicationContext) // re-arm first: a stuck tick must never stop the heartbeat
         val pending = goAsync()
         val wl = ctx.getSystemService(PowerManager::class.java).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "framy:tick").apply { acquire(60_000) }
         Thread {
             try { Tick.run(ctx.applicationContext) } finally {
-                Tick.arm(ctx.applicationContext)
                 if (wl.isHeld) wl.release()
                 pending.finish()
             }

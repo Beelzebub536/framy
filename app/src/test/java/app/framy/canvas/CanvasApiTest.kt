@@ -19,4 +19,13 @@ class CanvasApiTest {
         assertEquals(null, nextLink("<https://x/a>; rel=\"last\""))
         assertEquals(null, nextLink(null))
     }
+
+    @Test fun tokenOnlyGoesToTheCanvasHost() {
+        val base = "https://northsouth.instructure.com"
+        assertEquals(true, sameHost("https://northsouth.instructure.com/api/v1/files/5", base))
+        assertEquals(false, sameHost("https://northsouth.instructure.com@evil.com/api/v1/files/5", base))
+        assertEquals(false, sameHost("https://northsouth.instructure.com.evil.com/api/v1/files/5", base))
+        assertEquals(false, sameHost("http://northsouth.instructure.com/api/v1/files/5", base))
+        assertEquals(false, sameHost("not a url", base))
+    }
 }

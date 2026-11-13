@@ -199,7 +199,9 @@ private fun Files(course: Course) {
                     items(fl.value, key = { "f" + it.getLong("id") }) { file ->
                         val id = file.getLong("id")
                         FileRow(R.drawable.ic_file, file.optString("display_name"), sizeLabel(file.optLong("size")), id in downloaded.downloaded) {
-                            Downloads.enqueue(ctx, id, file.getString("url"), file.optString("display_name"))
+                            val url = file.optString("url")
+                            if (url.isBlank()) android.widget.Toast.makeText(ctx, "This file is locked", android.widget.Toast.LENGTH_SHORT).show()
+                            else Downloads.enqueue(ctx, id, url, file.optString("display_name"))
                         }
                     }
                 }
