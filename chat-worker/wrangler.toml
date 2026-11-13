@@ -1,0 +1,14 @@
+name = "framy-chat"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+
+[triggers]
+crons = ["0 3 * * *"] # daily cleanup: >60 days old, or beyond the newest 1,000
+
+# 3 posts per 60 s per IP (Workers rate limiting only supports 10 s or 60 s periods).
+[[ratelimits]]
+name = "POST_LIMIT"
+namespace_id = "1001"
+simple = { limit = 3, period = 60 }
+
+# Secrets (never in this file): npx wrangler secret put DATABASE_URL / ADMIN_KEY
