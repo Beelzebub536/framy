@@ -1,6 +1,12 @@
 package app.framy.ui
 
+import android.Manifest
 import android.content.Intent
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
+import app.framy.Secrets
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -39,7 +45,12 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun App() {
-        var stack by rememberSaveable { mutableStateOf("tab:canvas") }
+        // Nothing configured yet: open on Settings (back goes to the Canvas tab).
+        var stack by rememberSaveable {
+            mutableStateOf(if (Secrets.get("canvasToken") == null && !MailService.configured()) "tab:canvas\nsettings" else "tab:canvas")
+        }
+        val notifPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+        LaunchedEffect(Unit) { if (Build.VERSION.SDK_INT >= 33) notifPermission.launch(Manifest.permission.POST_NOTIFICATIONS) }
         val routes = stack.split('\n')
         fun push(r: String) { stack = (routes + r).joinToString("\n") }
         fun pop() { stack = routes.dropLast(1).joinToString("\n") }

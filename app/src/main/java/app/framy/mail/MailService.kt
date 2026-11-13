@@ -40,6 +40,11 @@ class MailService : Service() {
         @Volatile private var kick = false
         private val lock = Object()
 
+        /** One-off login check for Settings. True if Gmail accepts this address + app password. */
+        fun testLogin(address: String, password: String): Boolean = try {
+            session(idle = false).getStore("imaps").apply { connect(HOST, 993, address, password) }.close(); true
+        } catch (e: Exception) { false }
+
         fun configured() = Secrets.get("mailAddress") != null && Secrets.get("mailPassword") != null
 
         fun start(ctx: Context) {
