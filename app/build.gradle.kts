@@ -56,7 +56,7 @@ android {
 kotlin { jvmToolchain(17) }
 
 dependencies {
-    val bom = platform("androidx.compose:compose-bom:2025.02.00")
+    val bom = platform("androidx.compose:compose-bom:2026.09.00")
     implementation(bom)
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.activity:activity-compose:1.10.0")
