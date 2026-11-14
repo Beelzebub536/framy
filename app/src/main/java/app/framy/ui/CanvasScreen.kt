@@ -66,10 +66,6 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
-fun Modifier.combinedClickableCompat(onClick: () -> Unit, onLongClick: () -> Unit) =
-    this.then(Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick))
-
 // ---- shared chrome (used by Canvas and Mail tabs) ----
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -115,11 +111,12 @@ fun Avatar(label: String, courseId: Long?) {
 }
 
 /** The 72dp two-line row used by every list. */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun TwoLineRow(leading: @Composable () -> Unit, headline: String, supporting: String, trailing: String, unread: Boolean, onClick: () -> Unit, onLongClick: (() -> Unit)? = null) {
     Row(
         Modifier.fillMaxWidth().heightIn(min = 72.dp)
-            .then(if (onLongClick != null) Modifier.combinedClickableCompat(onClick, onLongClick) else Modifier.clickable(onClick = onClick))
+            .then(if (onLongClick != null) Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick) else Modifier.clickable(onClick = onClick))
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -208,7 +205,7 @@ fun CanvasScreen(
                 Secrets.get("canvasToken") == null -> EmptyState("Add your Canvas access token to get updates.", "Open Settings", onSettings)
                 state.tokenRejected -> EmptyState("Canvas rejected your token. Paste a new one.", "Open Settings", onSettings)
                 segment == 1 -> LazyColumn {
-                    if (state.courses.isEmpty()) item { EmptyState("No active courses yet. Pull refresh after your first sync.") }
+                    if (state.courses.isEmpty()) item { EmptyState("No active courses yet. Tap refresh to sync.") }
                     items(state.courses, key = { it.id }) { c ->
                         TwoLineRow({ Avatar(c.code.take(3).uppercase(), c.id) }, c.code, c.name, "", false, { onOpenCourse(c) })
                     }

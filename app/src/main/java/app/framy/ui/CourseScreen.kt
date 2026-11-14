@@ -159,10 +159,7 @@ private fun ModuleItem(courseId: Long, it: JSONObject) {
     }
 }
 
-private fun typeLabel(t: String) = when (t) {
-    "File" -> "File"; "Page" -> "Page"; "Quiz" -> "Quiz"; "Assignment" -> "Assignment"; "Discussion" -> "Discussion"
-    "ExternalUrl" -> "Link"; "ExternalTool" -> "External tool"; else -> t
-}
+private fun typeLabel(t: String) = when (t) { "ExternalUrl" -> "Link"; "ExternalTool" -> "External tool"; else -> t }
 
 @Composable
 private fun Files(course: Course) {
