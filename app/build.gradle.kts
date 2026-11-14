@@ -63,7 +63,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui")
     implementation("com.sun.mail:android-mail:1.6.7")
-    implementation("com.sun.mail:android-activation:1.6.7")
+    implementation("com.sun.mail:android-activation:1.6.8")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")
